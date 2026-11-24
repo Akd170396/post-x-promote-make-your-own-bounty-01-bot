@@ -38,9 +38,18 @@ const url =
     ? (parsed as Record<string, unknown>).url
     : undefined;
 if (typeof url !== "string" || !/^https:\/\/(x\.com|twitter\.com)\/\S+\/status\/\d+$/.test(url)) {
-  console.error("POST.json must hold {\"url\": \"https://x.com/<handle>/status/<id>\"}");
+  console.error(
+    `Invalid post URL in ${source}: ${JSON.stringify(url)} — expected "https://x.com/<handle>/status/<id>", e.g. "https://x.com/pemburudollar05/status/2125032201687548026"`,
+  );
   process.exit(1);
 }
 
 mkdirSync(outDir, { recursive: true });
 copyFileSync(source, target);
+
+// Verify the copy landed byte-identical; a truncated or partial copy
+// must fail loudly instead of being scored as a corrupt entry.
+if (!readFileSync(target).equals(readFileSync(source))) {
+  console.error(`Copy verification failed: ${target} differs from ${source}`);
+  process.exit(1);
+}
